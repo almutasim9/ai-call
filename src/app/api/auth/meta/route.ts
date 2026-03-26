@@ -5,9 +5,6 @@ import { createClient } from '@/lib/supabase/server'
 const SCOPES = [
   'whatsapp_business_management',
   'whatsapp_business_messaging',
-  'pages_messaging',
-  'instagram_manage_messages',
-  'pages_show_list',
 ].join(',')
 
 export async function GET(request: NextRequest) {
