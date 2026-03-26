@@ -25,7 +25,9 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    console.log('Incoming Meta Webhook Payload:', JSON.stringify(body, null, 2))
+    console.log('--- Incoming Meta Webhook ---')
+    console.log('Object Type:', body.object)
+    console.log('Full Payload:', JSON.stringify(body, null, 2))
 
     let customerId = ''
     let incomingText = ''
@@ -53,13 +55,20 @@ export async function POST(request: Request) {
     }
 
     // 2. Identify Tenant (MVP: For now, we use a default tenant)
-    const { data: tenant } = await supabase
+    const { data: tenant, error: tenantError } = await supabase
       .from('tenants')
       .select('id, store_name, meta_access_token, whatsapp_phone_number_id, instagram_page_id')
       .eq('status', 'active')
+      .limit(1)
       .single()
 
-    if (!tenant) throw new Error('No active tenant found')
+    if (tenantError || !tenant) {
+      console.error('Webhook Error: Tenant not found or inactive', tenantError)
+      return NextResponse.json({ error: 'Tenant configuration missing' }, { status: 404 })
+    }
+
+    console.log('Processing for Tenant ID:', tenant.id)
+    console.log('Store Name:', tenant.store_name)
 
     // 3. Fetch Products Context
     const { data: products } = await supabase
