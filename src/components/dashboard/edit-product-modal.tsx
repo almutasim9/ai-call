@@ -26,12 +26,16 @@ export function EditProductModal({ product }: { product: Product }) {
     setError(null)
 
     const formData = new FormData(e.currentTarget)
-    const updates = {
-      name: formData.get('name') as string,
-      price: parseFloat(formData.get('price') as string),
-      stock: parseInt(formData.get('stock') as string) || 0,
-      description: formData.get('description') as string
-    }
+    const name = (formData.get('name') as string).trim()
+    const price = parseFloat(formData.get('price') as string)
+    const stock = parseInt(formData.get('stock') as string)
+    const description = (formData.get('description') as string).trim()
+
+    if (!name) { setError('Product name is required'); setLoading(false); return }
+    if (isNaN(price) || price < 0) { setError('Price must be a valid positive number'); setLoading(false); return }
+    if (isNaN(stock) || stock < 0) { setError('Stock must be a valid positive number'); setLoading(false); return }
+
+    const updates = { name, price, stock, description }
 
     try {
       const res = await fetch(`/api/products/${product.id}`, {

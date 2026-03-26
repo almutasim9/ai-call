@@ -55,7 +55,7 @@ export async function proxy(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const ADMIN_EMAIL = 'almutasim.abed@gmail.com'
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL
 
   // Protect Dashboard and Admin routes
   if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
@@ -64,7 +64,7 @@ export async function proxy(request: NextRequest) {
 
   // Strict Admin Protection
   if (request.nextUrl.pathname.startsWith('/admin')) {
-    if (!user || user.email !== ADMIN_EMAIL) {
+    if (!user || !ADMIN_EMAIL || user.email !== ADMIN_EMAIL) {
       return NextResponse.json({ error: 'Unauthorized Access' }, { status: 403 })
     }
   }

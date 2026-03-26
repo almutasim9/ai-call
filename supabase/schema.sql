@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS conversations (
     customer_phone_or_id TEXT NOT NULL,
     platform TEXT NOT NULL CHECK (platform IN ('whatsapp', 'instagram')),
     message_history JSONB DEFAULT '[]'::jsonb,
+    last_processed_message_id TEXT,  -- deduplication: tracks last Meta message ID processed
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(tenant_id, customer_phone_or_id, platform)

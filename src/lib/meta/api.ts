@@ -2,6 +2,8 @@
  * Meta Graph API Helper
  */
 
+import { logger } from '@/lib/logger'
+
 export async function sendMetaMessage(
   recipientId: string,
   message: string,
@@ -10,7 +12,7 @@ export async function sendMetaMessage(
   phoneNumberId?: string // Required for WhatsApp
 ) {
   if (!accessToken) {
-    console.error('Missing Meta Access Token for tenant')
+    logger.error('Meta API: missing access token')
     return false
   }
 
@@ -44,14 +46,14 @@ export async function sendMetaMessage(
     const data = await response.json()
 
     if (!response.ok) {
-      console.error(`Meta API Error (${platform}):`, JSON.stringify(data, null, 2))
+      logger.error('Meta API: send failed', { platform, status: response.status, error: data })
       return false
     }
 
-    console.log(`Successfully sent ${platform} message to ${recipientId}`)
+    logger.info('Meta API: message sent', { platform, recipientId })
     return true
   } catch (error) {
-    console.error('Network error calling Meta API:', error)
+    logger.error('Meta API: network error', { error: error instanceof Error ? error.message : String(error) })
     return false
   }
 }

@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Users, Store, MessageCircle, Activity, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import { TenantActions } from './tenant-actions'
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient()
@@ -90,12 +91,10 @@ export default async function AdminOverviewPage() {
                     {new Date(tenant.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    <button className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mr-4 font-bold flex items-center gap-1.5">
+                    <button className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mr-4 font-bold inline-flex items-center gap-1.5">
                       <ExternalLink size={14} /> View
                     </button>
-                    <button className="text-rose-500 dark:text-rose-400/60 hover:text-rose-600 dark:hover:text-rose-400 transition-colors font-bold">
-                      Suspend
-                    </button>
+                    <TenantActions tenantId={tenant.id} currentStatus={tenant.status || 'active'} />
                   </td>
                 </tr>
               ))}

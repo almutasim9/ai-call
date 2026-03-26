@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Store, Package, MessageSquare, TrendingUp, LayoutDashboard } from 'lucide-react'
+import { Message } from '@/lib/types'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -8,20 +9,31 @@ export default async function DashboardPage() {
   const { data: { session } } = await supabase.auth.getSession()
   
   // Fetch stats concurrently
-  const [tenantRes, productRes, conversationRes] = await Promise.all([
+  const [tenantRes, productRes, conversationRes, allConversationsRes] = await Promise.all([
     supabase.from('tenants').select('*').eq('id', session?.user?.id).single(),
     supabase.from('products').select('*', { count: 'exact', head: true }),
-    supabase.from('conversations').select('*', { count: 'exact', head: true })
+    supabase.from('conversations').select('*', { count: 'exact', head: true }),
+    supabase.from('conversations').select('message_history')
   ])
 
   const tenant = tenantRes.data
   const productCount = productRes.count
   const conversationCount = conversationRes.count
 
+  // Count AI messages sent today by scanning message_history JSONB
+  const todayStart = new Date()
+  todayStart.setUTCHours(0, 0, 0, 0)
+  const aiMessagesToday = (allConversationsRes.data ?? []).reduce((total, conv) => {
+    const messages: Message[] = conv.message_history ?? []
+    return total + messages.filter(
+      m => m.role === 'ai' && new Date(m.timestamp) >= todayStart
+    ).length
+  }, 0)
+
   const stats = [
     { label: 'Total Products', value: productCount || 0, icon: Package, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-600/10' },
     { label: 'Total Conversations', value: conversationCount || 0, icon: MessageSquare, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-600/10' },
-    { label: 'AI Messages Today', value: 0, icon: TrendingUp, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-600/10' },
+    { label: 'AI Messages Today', value: aiMessagesToday, icon: TrendingUp, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-600/10' },
   ]
 
   const connections = [

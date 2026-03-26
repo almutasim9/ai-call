@@ -1,7 +1,17 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { validateCreateTenant, formatErrors } from '@/lib/validation'
+import { logger } from '@/lib/logger'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { encrypt } from '@/lib/crypto'
 
 export async function POST(request: Request) {
+  // Rate limit: 10 tenant creation attempts per hour per IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  if (!checkRateLimit(`create-tenant:${ip}`, 10, 60 * 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   try {
     const { storeName, email, password, metaAccessToken, whatsappPhoneId, instagramPageId } = await request.json()
     const adminSecret = request.headers.get('x-admin-secret')
@@ -11,8 +21,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!storeName || !email || !password) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    const validationErrors = validateCreateTenant({ storeName, email, password })
+    if (validationErrors.length > 0) {
+      return NextResponse.json({ error: formatErrors(validationErrors) }, { status: 400 })
     }
 
     const supabaseAdmin = createAdminClient()
@@ -35,7 +46,7 @@ export async function POST(request: Request) {
       .insert({
         id: userId,
         store_name: storeName,
-        meta_access_token: metaAccessToken,
+        meta_access_token: metaAccessToken ? encrypt(metaAccessToken) : null,
         whatsapp_phone_number_id: whatsappPhoneId,
         instagram_page_id: instagramPageId,
         status: 'active'
@@ -53,8 +64,9 @@ export async function POST(request: Request) {
       tenantId: userId 
     })
 
-  } catch (error: any) {
-    console.error('Create Tenant Error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    logger.error('Admin: create tenant failed', { error: message })
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

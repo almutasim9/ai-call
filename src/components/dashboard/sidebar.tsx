@@ -1,12 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Package, MessageSquare, LogOut, Store, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   const navItems = [
     {
@@ -84,7 +92,7 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-500/10 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all text-sm font-bold border border-transparent hover:border-rose-500/20 group">
+        <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-rose-500/10 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all text-sm font-bold border border-transparent hover:border-rose-500/20 group">
           <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
           <span>Sign Out</span>
         </button>
